@@ -118,7 +118,7 @@ interpreter, input_details, output_details, labels = load_model_and_labels()
 with st.sidebar:
     plants = ["Apple", "Blueberry", "Cherry", "Corn", "Grape", "Orange", "Peach", "Pepper", "Potato", "Raspberry", "Soybean", "Squash", "Strawberry", "Tomato"]
     tags_html = "".join([f'<span class="tag">{p}</span>' for p in plants])
-    sidebar_html = f'<div class="brand">🌿 Plant Disease Scanner</div><div class="info-section"><h3>How to Use</h3><div class="info-content">1. Click the upload box or drag an image of a plant leaf.<br>2. Wait for the AI to analyze the image.<br>3. View the diagnosis and confidence score.</div></div><div class="info-section"><h3>Supported Plants</h3><div style="margin-bottom: 2rem;">{tags_html}</div></div><div class="info-section"><h3>Model Accuracy</h3><div class="info-content" style="margin-bottom: 0.5rem;">Current model performance on validation set:</div><span class="accuracy-badge">96.3% Accuracy</span></div>'
+    sidebar_html = f'<div class="brand">🌿 Disease Scanner</div><div class="info-section"><h3>How to Use</h3><div class="info-content">1. Click the upload box or drag an image of a plant leaf.<br>2. Wait for the AI to analyze the image.<br>3. View the diagnosis and confidence score.</div></div><div class="info-section"><h3>Supported Plants</h3><div style="margin-bottom: 2rem;">{tags_html}</div></div><div class="info-section"><h3>Model Accuracy</h3><div class="info-content" style="margin-bottom: 0.5rem;">Current model performance on validation set:</div><span class="accuracy-badge">96.3% Accuracy</span></div>'
     st.markdown(sidebar_html, unsafe_allow_html=True)
 
 # Renders the main title and subtitle of the application (flattened).
