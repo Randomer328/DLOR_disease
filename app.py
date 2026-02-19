@@ -1,6 +1,5 @@
 # Import necessary libraries for the web app, deep learning, image processing, and encoding.
 import streamlit as st
-import streamlit.components.v1 as components
 import tensorflow as tf
 import numpy as np
 from PIL import Image
@@ -19,36 +18,54 @@ def local_css():
         <style>
             [data-testid="stAppViewContainer"] { background-color: #f3f4f6 !important; }
             [data-testid="stHeader"] { display: none !important; }
-            section[data-testid="stMain"] .block-container { background-color: #ffffff !important; border-radius: 12px !important; padding: 3rem !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; border: 1px solid #e5e7eb !important; max-width: 950px !important; margin: 12vh auto !important; }
+            
+            /* Main Content Card Styling */
+            section[data-testid="stMain"] .block-container { 
+                background-color: #ffffff !important; 
+                border-radius: 12px !important; 
+                padding: 3rem !important; 
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; 
+                border: 1px solid #e5e7eb !important; 
+                max-width: 950px !important; 
+                margin: 5rem auto !important; /* Switched to rem for stability in hosted iframes */
+            }
             section[data-testid="stMain"] { padding-top: 0 !important; }
             #MainMenu, footer { visibility: hidden; }
             
+            /* Sidebar Styling */
             [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #e5e7eb !important; }
             [data-testid="stSidebarHeader"] { padding-top: 1rem !important; padding-bottom: 0rem !important; min-height: 0 !important; display: none !important; }
             [data-testid="stSidebarNav"] { display: none !important; height: 0 !important; }
             section[data-testid="stSidebar"] .block-container { padding-top: 2rem !important; }
 
+            /* Toggle Button Styling */
             [data-testid="collapsedControl"] { background-color: #10b981 !important; color: white !important; border-radius: 8px !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2) !important; opacity: 1 !important; top: 1.5rem !important; left: 1.5rem !important; transition: background-color 0.2s ease !important; z-index: 9999 !important; }
             [data-testid="collapsedControl"]:hover { background-color: #059669 !important; }
             [data-testid="collapsedControl"] svg { fill: #ffffff !important; color: #ffffff !important; }
 
+            /* Sidebar HTML Elements Styling */
             .brand { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; color: #059669; margin-top: 0rem; margin-bottom: 2rem; }
             .info-section { margin-bottom: 2rem; }
             .info-section h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 1rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
             .info-content { font-size: 0.9rem; line-height: 1.6; color: #1f2937; margin-bottom: 1.5rem;}
             .tag { background: #ecfdf5; color: #059669; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; border: 1px solid #d1fae5; display: inline-block; margin: 0.25rem 0.25rem 0.25rem 0; }
-            .disclaimer-box { background: #fffbeb; border: 1px solid #fcd34d; padding: 1rem; border-radius: 12px; font-size: 0.8rem; color: #92400e; }
             .accuracy-badge { display: inline-block; background: #1f2937; color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; }
 
+            /* Header HTML Elements Styling */
             .header-container { text-align: center; margin-bottom: 2.5rem; }
             .header-container h1 { font-size: 2.2rem; font-weight: 700; color: #1f2937; margin-top: 0; margin-bottom: 0.5rem; padding: 0; }
             .header-container p { color: #6b7280; font-size: 1rem; margin: 0; }
 
+            /* Uploader Drag-and-Drop Override */
+            /* Using pure CSS hover instead of JS to prevent Streamlit Cloud iframe CORS errors */
             [data-testid="stFileUploadDropzone"] { border: 2px dashed #e5e7eb !important; border-radius: 12px !important; padding: 5rem 2rem !important; background-color: #f9fafb !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; position: relative; z-index: 1; }
-            [data-testid="stFileUploadDropzone"]:hover, .drag-active-highlight { border-color: #10b981 !important; background-color: #ecfdf5 !important; transform: scale(1.03) !important; z-index: 9999 !important; box-shadow: 0 0 0 20000px rgba(0, 0, 0, 0.5), 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important; }
+            [data-testid="stFileUploadDropzone"]:hover { border-color: #10b981 !important; background-color: #ecfdf5 !important; transform: scale(1.03) !important; z-index: 9999 !important; box-shadow: 0 0 0 20000px rgba(0, 0, 0, 0.5), 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important; }
             [data-testid="stFileUploadDropzone"] * { color: #1f2937 !important; text-align: center !important; }
             [data-testid="stFileUploadDropzone"] svg { fill: #6b7280 !important; color: #6b7280 !important; }
+            [data-testid="stFileUploadDropzone"] button { background-color: #ffffff !important; color: #1f2937 !important; border: 1px solid #d1d5db !important; font-weight: 500 !important; }
+            [data-testid="stFileUploadDropzone"] button:hover { background-color: #f3f4f6 !important; }
 
+            /* Results Section Styling */
             .image-preview-box { border-radius: 12px; overflow: hidden; background: #000; height: 320px; display: flex; align-items: center; justify-content: center; border: 1px solid #e5e7eb; }
             .image-preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
             
@@ -60,40 +77,16 @@ def local_css():
             .pred-header { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600; color: #1f2937; margin-bottom: 0.25rem; }
             .progress-bg { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
             .progress-fill { height: 100%; transition: width 0.8s ease-in-out; }
-
-            [data-testid="stFileUploadDropzone"] button { background-color: #ffffff !important; color: #1f2937 !important; border: 1px solid #d1d5db !important; font-weight: 500 !important; }
-            [data-testid="stFileUploadDropzone"] button:hover { background-color: #f3f4f6 !important; }
             
             div[data-testid="stButton"] button { width: 100%; background-color: #ffffff !important; border: 1px solid #e5e7eb !important; padding: 0.75rem 1.5rem !important; border-radius: 12px !important; color: #1f2937 !important; font-weight: 600 !important; margin-top: 1rem; }
             div[data-testid="stButton"] button:hover { background-color: #f3f4f6 !important; border-color: #d1d5db !important; }
         </style>
     """, unsafe_allow_html=True)
 
-# Injects an invisible JavaScript snippet into the browser window.
-# This script monitors dragging files from the user's computer over the browser,
-# adding a special class that triggers our CSS dark-background spotlight effect.
-def inject_drag_script():
-    components.html(
-        """
-        <script>
-            const doc = window.parent.document;
-            let dragCounter = 0;
-            doc.addEventListener('dragenter', (e) => { e.preventDefault(); dragCounter++; const dropzone = doc.querySelector('[data-testid="stFileUploadDropzone"]'); if (dropzone) dropzone.classList.add('drag-active-highlight'); }, true);
-            doc.addEventListener('dragleave', (e) => { dragCounter--; if (dragCounter === 0) { const dropzone = doc.querySelector('[data-testid="stFileUploadDropzone"]'); if (dropzone) dropzone.classList.remove('drag-active-highlight'); } }, true);
-            doc.addEventListener('drop', (e) => { dragCounter = 0; const dropzone = doc.querySelector('[data-testid="stFileUploadDropzone"]'); if (dropzone) dropzone.classList.remove('drag-active-highlight'); }, true);
-            doc.addEventListener('dragover', (e) => { e.preventDefault(); }, true);
-        </script>
-        """,
-        height=0,
-        width=0,
-    )
-
-# Executes the UI injection functions to style the page right away.
+# Executes the CSS injection function to style the page right away.
 local_css()
-inject_drag_script()
 
 # Loads the TensorFlow Lite model and the labels text file exactly once.
-# st.cache_resource ensures we don't reload the heavy model every time the user interacts.
 @st.cache_resource
 def load_model_and_labels():
     interpreter = tf.lite.Interpreter(model_path="model96.tflite")
@@ -104,16 +97,14 @@ def load_model_and_labels():
         labels = [line.strip() for line in f.readlines()]
     return interpreter, input_details, output_details, labels
 
-# Takes the user's uploaded image, resizes it to match the model's required input size (224x224),
-# converts it to a mathematical array, and formats it for TensorFlow's predictions.
+# Resizes and formats the uploaded image for TensorFlow's predictions.
 def preprocess_image(image):
     img = image.resize((224, 224))
     img_array = np.array(img.convert('RGB')).astype(np.float32)
     img_array = np.expand_dims(img_array, axis=0)
     return img_array
 
-# Converts a Pillow image object into a raw Base64 text string.
-# We need this to embed the preview image directly into our custom HTML tags.
+# Converts a Pillow image object into a raw Base64 text string for UI rendering.
 def image_to_base64(img):
     buffered = BytesIO()
     img.save(buffered, format="PNG")
@@ -123,43 +114,17 @@ def image_to_base64(img):
 interpreter, input_details, output_details, labels = load_model_and_labels()
 
 # Renders the sidebar of the web application.
-# Note: HTML is un-indented below so Streamlit does not accidentally parse it as a Markdown code block.
+# ALL HTML is flattened into a strict single line to bypass Streamlit Markdown block rendering bugs.
 with st.sidebar:
     plants = ["Apple", "Blueberry", "Cherry", "Corn", "Grape", "Orange", "Peach", "Pepper", "Potato", "Raspberry", "Soybean", "Squash", "Strawberry", "Tomato"]
     tags_html = "".join([f'<span class="tag">{p}</span>' for p in plants])
-    
-    sidebar_html = f"""
-<div class="brand">🌿 Plant Disease Scanner</div>
-<div class="info-section">
-    <h3>How to Use</h3>
-    <div class="info-content">
-        1. Click the upload box or drag an image of a plant leaf.<br>
-        2. Wait for the AI to analyze the image.<br>
-        3. View the diagnosis and confidence score.
-    </div>
-</div>
-<div class="info-section">
-    <h3>Supported Plants</h3>
-    <div style="margin-bottom: 2rem;">{tags_html}</div>
-</div>
-<div class="info-section">
-    <h3>Model Accuracy</h3>
-    <div class="info-content" style="margin-bottom: 0.5rem;">Current model performance on validation set:</div>
-    <span class="accuracy-badge">96.3% Accuracy</span>
-</div>
-"""
+    sidebar_html = f'<div class="brand">🌿 Plant Disease Scanner</div><div class="info-section"><h3>How to Use</h3><div class="info-content">1. Click the upload box or drag an image of a plant leaf.<br>2. Wait for the AI to analyze the image.<br>3. View the diagnosis and confidence score.</div></div><div class="info-section"><h3>Supported Plants</h3><div style="margin-bottom: 2rem;">{tags_html}</div></div><div class="info-section"><h3>Model Accuracy</h3><div class="info-content" style="margin-bottom: 0.5rem;">Current model performance on validation set:</div><span class="accuracy-badge">96.3% Accuracy</span></div>'
     st.markdown(sidebar_html, unsafe_allow_html=True)
 
-# Renders the main title and subtitle of the application.
-st.markdown("""
-<div class="header-container">
-    <h1>Plant Disease Classifier</h1>
-    <p>Upload a leaf image to detect diseases instantly using AI.</p>
-</div>
-""", unsafe_allow_html=True)
+# Renders the main title and subtitle of the application (flattened).
+st.markdown('<div class="header-container"><h1>Plant Disease Classifier</h1><p>Upload a leaf image to detect diseases instantly using AI.</p></div>', unsafe_allow_html=True)
 
 # Creates a persistent session state variable to track the uploader widget.
-# Incrementing this key will trick Streamlit into completely resetting the uploader.
 if 'uploader_key' not in st.session_state:
     st.session_state.uploader_key = 0
 
@@ -203,16 +168,8 @@ if uploaded_file is not None:
         # Generates a green success card if healthy, or a red warning card if diseased.
         icon, color_class, diag_text = ("✅", "healthy", "Plant is Healthy") if is_healthy else ("⚠️", "diseased", result_label)
         
-        # Note: HTML is un-indented below so Streamlit does not parse it as a Markdown code block.
-        status_html = f"""
-<div class="status-card {color_class}">
-    <span style="font-size: 24px;">{icon}</span>
-    <div>
-        <div style="font-size:0.8rem; opacity:0.8">Diagnosis</div>
-        <div style="font-weight:700; font-size:1.1rem;">{diag_text}</div>
-    </div>
-</div>
-"""
+        # HTML strings are flattened to a single line so Streamlit DOES NOT parse them as Markdown Code blocks.
+        status_html = f'<div class="status-card {color_class}"><span style="font-size: 24px;">{icon}</span><div><div style="font-size:0.8rem; opacity:0.8">Diagnosis</div><div style="font-weight:700; font-size:1.1rem;">{diag_text}</div></div></div>'
         
         # Generates the horizontal progress bars for the top 3 predictions.
         bars_html = ""
@@ -221,14 +178,7 @@ if uploaded_file is not None:
             name = labels[idx].replace("___", " ").replace("_", " ")
             bar_color = "#ef4444" if i == 0 and not is_healthy else "#10b981"
             
-            bars_html += f"""
-<div class="prediction-item">
-    <div class="pred-header"><span>{name}</span><span>{conf:.1f}%</span></div>
-    <div class="progress-bg">
-        <div class="progress-fill" style="width: {conf}%; background-color: {bar_color};"></div>
-    </div>
-</div>
-"""
+            bars_html += f'<div class="prediction-item"><div class="pred-header"><span>{name}</span><span>{conf:.1f}%</span></div><div class="progress-bg"><div class="progress-fill" style="width: {conf}%; background-color: {bar_color};"></div></div></div>'
             
         # Inject the fully constructed status card and progress bars into the UI.
         st.markdown(status_html + bars_html, unsafe_allow_html=True)
