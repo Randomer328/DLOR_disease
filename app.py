@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 import base64
 from io import BytesIO
+import streamlit.components.v1 as components
 
 # Configures the default settings for the Streamlit web application.
 # Sets the browser tab title, favicon, and expands the layout to fill the screen width.
@@ -19,8 +20,9 @@ def local_css():
             [data-testid="stAppViewContainer"] { background-color: #f3f4f6 !important; }
             [data-testid="stHeader"] { display: none !important; }
             
-            /* Main Content Card Styling */
-            section[data-testid="stMain"] .block-container { 
+            /* Main Content Card Styling - Robust for both Local & Streamlit Cloud */
+            section[data-testid="stMain"] .block-container,
+            [data-testid="stMainBlockContainer"] { 
                 background-color: #ffffff !important; 
                 border-radius: 12px !important; 
                 padding: 3rem !important; 
@@ -32,9 +34,11 @@ def local_css():
             section[data-testid="stMain"] { padding-top: 0 !important; }
             #MainMenu, footer { visibility: hidden; }
             
-            /* Sidebar Styling */
+            /* Sidebar Styling - Hide Cloud's injected 'X' close button */
             [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #e5e7eb !important; }
             [data-testid="stSidebarHeader"] { padding-top: 1rem !important; padding-bottom: 0rem !important; min-height: 0 !important; display: none !important; }
+            [data-testid="stSidebarHeader"] * { display: none !important; } /* Force hide children */
+            button[title="Close sidebar"], button[kind="header"] { display: none !important; } /* Target the X specifically */
             [data-testid="stSidebarNav"] { display: none !important; height: 0 !important; }
             section[data-testid="stSidebar"] .block-container { padding-top: 2rem !important; }
 
@@ -57,13 +61,29 @@ def local_css():
             .header-container p { color: #6b7280; font-size: 1rem; margin: 0; }
 
             /* Uploader Drag-and-Drop Override */
-            /* Using pure CSS hover instead of JS to prevent Streamlit Cloud iframe CORS errors */
-            [data-testid="stFileUploadDropzone"] { border: 2px dashed #e5e7eb !important; border-radius: 12px !important; padding: 5rem 2rem !important; background-color: #f9fafb !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; position: relative; z-index: 1; }
-            [data-testid="stFileUploadDropzone"]:hover { border-color: #10b981 !important; background-color: #ecfdf5 !important; transform: scale(1.03) !important; z-index: 9999 !important; box-shadow: 0 0 0 20000px rgba(0, 0, 0, 0.5), 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important; }
+            [data-testid="stFileUploadDropzone"] { border: 2px dashed #e5e7eb !important; border-radius: 12px !important; padding: 5rem 2rem !important; background-color: #f9fafb !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; position: relative; z-index: 10000 !important; }
+            
+            /* Streamlit Cloud specific hover/dragging styles */
+            [data-testid="stFileUploadDropzone"]:hover,
+            [data-testid="stFileUploadDropzone"].dragging { border-color: #10b981 !important; background-color: #ecfdf5 !important; transform: scale(1.03) !important; z-index: 10000 !important; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important; }
+            
             [data-testid="stFileUploadDropzone"] * { color: #1f2937 !important; text-align: center !important; }
             [data-testid="stFileUploadDropzone"] svg { fill: #6b7280 !important; color: #6b7280 !important; }
             [data-testid="stFileUploadDropzone"] button { background-color: #ffffff !important; color: #1f2937 !important; border: 1px solid #d1d5db !important; font-weight: 500 !important; }
             [data-testid="stFileUploadDropzone"] button:hover { background-color: #f3f4f6 !important; }
+
+            /* Custom Overlay for Streamlit Cloud Dragging */
+            #drag-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 9999;
+                display: none;
+                pointer-events: none;
+            }
 
             /* Results Section Styling */
             .image-preview-box { border-radius: 12px; overflow: hidden; background: #000; height: 320px; display: flex; align-items: center; justify-content: center; border: 1px solid #e5e7eb; }
@@ -81,10 +101,39 @@ def local_css():
             div[data-testid="stButton"] button { width: 100%; background-color: #ffffff !important; border: 1px solid #e5e7eb !important; padding: 0.75rem 1.5rem !important; border-radius: 12px !important; color: #1f2937 !important; font-weight: 600 !important; margin-top: 1rem; }
             div[data-testid="stButton"] button:hover { background-color: #f3f4f6 !important; border-color: #d1d5db !important; }
         </style>
+        <div id="drag-overlay"></div>
     """, unsafe_allow_html=True)
 
 # Executes the CSS injection function to style the page right away.
 local_css()
+
+# JavaScript to handle the "Full Screen Shadow" and state sync on drag in Streamlit Cloud
+components.html("""
+    <script>
+        const doc = window.parent.document;
+        const overlay = doc.getElementById('drag-overlay');
+        const dropzone = doc.querySelector('[data-testid="stFileUploadDropzone"]');
+        
+        doc.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (overlay) overlay.style.display = 'block';
+            if (dropzone) dropzone.classList.add('dragging');
+        });
+        
+        doc.addEventListener('dragleave', (e) => {
+            // Only hide if we actually leave the window
+            if (e.relatedTarget === null) {
+                if (overlay) overlay.style.display = 'none';
+                if (dropzone) dropzone.classList.remove('dragging');
+            }
+        });
+        
+        doc.addEventListener('drop', (e) => {
+            if (overlay) overlay.style.display = 'none';
+            if (dropzone) dropzone.classList.remove('dragging');
+        });
+    </script>
+""", height=0)
 
 # Loads the TensorFlow Lite model and the labels text file exactly once.
 @st.cache_resource
@@ -118,7 +167,7 @@ interpreter, input_details, output_details, labels = load_model_and_labels()
 with st.sidebar:
     plants = ["Apple", "Blueberry", "Cherry", "Corn", "Grape", "Orange", "Peach", "Pepper", "Potato", "Raspberry", "Soybean", "Squash", "Strawberry", "Tomato"]
     tags_html = "".join([f'<span class="tag">{p}</span>' for p in plants])
-    sidebar_html = f'<div class="brand">🌿 Disease Scanner</div><div class="info-section"><h3>How to Use</h3><div class="info-content">1. Click the upload box or drag an image of a plant leaf.<br>2. Wait for the AI to analyze the image.<br>3. View the diagnosis and confidence score.</div></div><div class="info-section"><h3>Supported Plants</h3><div style="margin-bottom: 2rem;">{tags_html}</div></div><div class="info-section"><h3>Model Accuracy</h3><div class="info-content" style="margin-bottom: 0.5rem;">Current model performance on validation set:</div><span class="accuracy-badge">96.3% Accuracy</span></div>'
+    sidebar_html = f'<div class="brand">🌿 Plant Disease Scanner</div><div class="info-section"><h3>How to Use</h3><div class="info-content">1. Click the upload box or drag an image of a plant leaf.<br>2. Wait for the AI to analyze the image.<br>3. View the diagnosis and confidence score.</div></div><div class="info-section"><h3>Supported Plants</h3><div style="margin-bottom: 2rem;">{tags_html}</div></div><div class="info-section"><h3>Model Accuracy</h3><div class="info-content" style="margin-bottom: 0.5rem;">Current model performance on validation set:</div><span class="accuracy-badge">96.3% Accuracy</span></div>'
     st.markdown(sidebar_html, unsafe_allow_html=True)
 
 # Renders the main title and subtitle of the application (flattened).
