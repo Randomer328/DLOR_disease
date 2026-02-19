@@ -129,7 +129,7 @@ with st.sidebar:
     tags_html = "".join([f'<span class="tag">{p}</span>' for p in plants])
     
     sidebar_html = f"""
-<div class="brand">🌿 Disease Scanner</div>
+<div class="brand">🌿 Plant Disease Scanner</div>
 <div class="info-section">
     <h3>How to Use</h3>
     <div class="info-content">
@@ -241,5 +241,4 @@ if uploaded_file is not None:
             if hasattr(st, 'rerun'):
                 st.rerun()
             else:
-
                 st.experimental_rerun()
